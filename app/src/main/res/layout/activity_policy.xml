@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".Activities.PolicyActivity">
+    <TextView
+        android:id="@+id/heading"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textAllCaps="false"
+        android:textStyle="bold"
+        android:layout_centerHorizontal="true"
+        android:textColor="#2271B3"
+        android:textSize="35dp"
+        android:text="\t\t\t\t\t\t\t\t
+        Flatter\nPrivacy Policy:\n"/>
+    <TextView
+        android:id="@+id/body"
+        android:layout_below="@+id/heading"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textAllCaps="false"
+        android:textStyle="italic"
+        android:layout_centerHorizontal="true"
+        android:textColor="#000000"
+        android:textSize="25dp"
+        android:text="This app uses Personal data of users like :\nemail id\nphone no \nphone storage\nCamera\nwith their permissions.\n
+\nThe use of personal data is only to provide users a better experience with this app."/>
+
+</RelativeLayout>
