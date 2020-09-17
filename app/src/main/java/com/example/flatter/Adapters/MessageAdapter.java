@@ -11,6 +11,7 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+
 import com.example.flatter.R;
 import com.example.flatter.models.Messages;
 import com.google.firebase.auth.FirebaseAuth;
@@ -21,7 +22,11 @@ import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 import com.squareup.picasso.Picasso;
 
+import java.security.MessageDigest;
 import java.util.List;
+
+import javax.crypto.Cipher;
+import javax.crypto.spec.SecretKeySpec;
 
 import de.hdodenhof.circleimageview.CircleImageView;
 
@@ -32,9 +37,10 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.MessageV
     private DatabaseReference usersRef;
 
 
-    public MessageAdapter (List<Messages> userMessagesList)
-    {
+
+    public MessageAdapter(List<Messages> userMessagesList) throws Exception {
         this.userMessagesList = userMessagesList;
+
     }
 
 
@@ -123,16 +129,36 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.MessageV
 
                 messageViewHolder.senderMessageText.setBackgroundResource(R.drawable.sender_messages_layout);
                 messageViewHolder.senderMessageText.setTextColor(Color.BLACK);
-                messageViewHolder.senderMessageText.setText(messages.getMessage() + "\n \n" + messages.getTime() + " - " + messages.getDate());
+
+                //decryption done here from type
+                String decryptedText = "null";
+                try {
+                    decryptedText = decrypt(messages.getMessage(),"password");
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+                messageViewHolder.senderMessageText.setText(decryptedText+"\n \n" + messages.getTime() + " - " + messages.getDate());
             }
             else
             {
                 messageViewHolder.receiverProfileImage.setVisibility(View.VISIBLE);
                 messageViewHolder.receiverMessageText.setVisibility(View.VISIBLE);
 
+                //decryption done here sender type
+                String decryptedText = "null";
+                try {
+                    decryptedText = decrypt(messages.getMessage(),"password");
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+
+
                 messageViewHolder.receiverMessageText.setBackgroundResource(R.drawable.receiver_messages_layout);
                 messageViewHolder.receiverMessageText.setTextColor(Color.BLACK);
-                messageViewHolder.receiverMessageText.setText(messages.getMessage() + "\n \n" + messages.getTime() + " - " + messages.getDate());
+
+
+
+                messageViewHolder.receiverMessageText.setText(decryptedText + "\n \n" + messages.getTime() + " - " + messages.getDate());
             }
         }
     }
@@ -144,6 +170,25 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.MessageV
     public int getItemCount()
     {
         return userMessagesList.size();
+    }
+
+    private SecretKeySpec generateKey(String password) throws  Exception{
+        final MessageDigest digest = MessageDigest.getInstance("SHA-256");
+        byte[] bytes = password.getBytes("UTF-8");
+        digest.update(bytes,0,bytes.length);
+        byte[] key  = digest.digest();
+        SecretKeySpec secretKeySpec = new SecretKeySpec(key,"AES");
+        return secretKeySpec;
+    }
+
+    private String decrypt(String output,String password) throws Exception{
+        SecretKeySpec key = generateKey(password);
+        Cipher c = Cipher.getInstance("AES");
+        c.init(Cipher.DECRYPT_MODE,key);
+        byte[] decodedValue = android.util.Base64.decode(output, android.util.Base64.DEFAULT);
+        byte[] decValue = c.doFinal(decodedValue);
+        String decryptedValue = new String(decValue);
+        return decryptedValue;
     }
 
 }

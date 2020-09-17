@@ -9,6 +9,8 @@ import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
 import android.text.TextUtils;
+import android.util.Base64;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.EditText;
@@ -17,6 +19,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.example.flatter.Adapters.MessageAdapter;
+
 import com.example.flatter.R;
 import com.example.flatter.models.Messages;
 import com.google.android.gms.tasks.OnCompleteListener;
@@ -30,12 +33,29 @@ import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 import com.squareup.picasso.Picasso;
 
+import java.security.GeneralSecurityException;
+import java.security.InvalidKeyException;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.security.spec.InvalidKeySpecException;
+import java.security.spec.InvalidParameterSpecException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import java.util.*;
+import java.io.*;
+
+import javax.crypto.BadPaddingException;
+import javax.crypto.Cipher;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.KeyGenerator;
+import javax.crypto.NoSuchPaddingException;
+import javax.crypto.SecretKey;
+import javax.crypto.spec.SecretKeySpec;
 
 import de.hdodenhof.circleimageview.CircleImageView;
 
@@ -54,6 +74,11 @@ public class ChatsActivity extends AppCompatActivity
     private EditText MessageInputText;
 
     private final List<Messages> messagesList = new ArrayList<>();
+
+
+   // private HashMap<String,Object> mp = new HashMap<>();
+
+
     private LinearLayoutManager linearLayoutManager;
     private MessageAdapter messageAdapter;
     private RecyclerView userMessagesList;
@@ -61,6 +86,10 @@ public class ChatsActivity extends AppCompatActivity
 
     private String saveCurrentTime, saveCurrentDate;
 
+    public ChatsActivity() throws Exception {
+    }
+
+    //crypto variables
 
 
     @Override
@@ -80,7 +109,11 @@ public class ChatsActivity extends AppCompatActivity
         messageReceiverImage = getIntent().getExtras().get("visit_image").toString();
 
 
-        IntializeControllers();
+        try {
+            IntializeControllers();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
 
         userName.setText(messageReceiverName);
@@ -97,13 +130,15 @@ public class ChatsActivity extends AppCompatActivity
 
 
         DisplayLastSeen();
+
+
+
     }
 
 
 
 
-    private void IntializeControllers()
-    {
+    private void IntializeControllers() throws Exception {
         ChatToolBar = (Toolbar) findViewById(R.id.chat_toolbar);
         setSupportActionBar(ChatToolBar);
 
@@ -224,6 +259,17 @@ public class ChatsActivity extends AppCompatActivity
     {
         String messageText = MessageInputText.getText().toString();
 
+
+        //Encryption done here
+        String encryptedText = "null";
+        try {
+            encryptedText = encrypt(messageText,"password");
+            Log.d("Encrypt ",encryptedText);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        messageText = encryptedText;
+
         if (TextUtils.isEmpty(messageText))
         {
             Toast.makeText(this, "first write your message...", Toast.LENGTH_SHORT).show();
@@ -247,6 +293,7 @@ public class ChatsActivity extends AppCompatActivity
             messageTextBody.put("time", saveCurrentTime);
             messageTextBody.put("date", saveCurrentDate);
 
+
             Map messageBodyDetails = new HashMap();
             messageBodyDetails.put(messageSenderRef + "/" + messagePushID, messageTextBody);
             messageBodyDetails.put( messageReceiverRef + "/" + messagePushID, messageTextBody);
@@ -257,7 +304,7 @@ public class ChatsActivity extends AppCompatActivity
                 {
                     if (task.isSuccessful())
                     {
-                        Toast.makeText(ChatsActivity.this, "Message Sent Successfully...", Toast.LENGTH_SHORT).show();
+                        //Toast.makeText(ChatsActivity.this, "Message Sent Successfully...", Toast.LENGTH_SHORT).show();
                     }
                     else
                     {
@@ -267,5 +314,37 @@ public class ChatsActivity extends AppCompatActivity
                 }
             });
         }
+
+
     }
+
+
+    private String decrypt(String output,String password) throws Exception{
+             SecretKeySpec key = generateKey(password);
+             Cipher c = Cipher.getInstance("AES");
+             c.init(Cipher.DECRYPT_MODE,key);
+             byte[] decodedValue = android.util.Base64.decode(output, android.util.Base64.DEFAULT);
+             byte[] decValue = c.doFinal(decodedValue);
+             String decryptedValue = new String(decValue);
+             return decryptedValue;
+    }
+
+    private String encrypt(String Data,String password) throws Exception{
+        SecretKeySpec key = generateKey(password);
+        Cipher c = Cipher.getInstance("AES");
+        c.init(Cipher.ENCRYPT_MODE,key);
+        byte[] encVal = c.doFinal(Data.getBytes());
+        String encryptedValue = Base64.encodeToString(encVal,Base64.DEFAULT);
+        return encryptedValue;
+    }
+
+    private SecretKeySpec generateKey(String password) throws  Exception{
+        final MessageDigest digest = MessageDigest.getInstance("SHA-256");
+        byte[] bytes = password.getBytes("UTF-8");
+        digest.update(bytes,0,bytes.length);
+        byte[] key  = digest.digest();
+        SecretKeySpec secretKeySpec = new SecretKeySpec(key,"AES");
+        return secretKeySpec;
+    }
+
 }

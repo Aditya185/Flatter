@@ -4,7 +4,6 @@ package com.example.flatter.models;
 public class Messages
 {
     private String from, message, type, to, messageID, time, date, name;
-
     public Messages()
     {
 
@@ -19,7 +18,10 @@ public class Messages
         this.time = time;
         this.date = date;
         this.name = name;
+
     }
+
+
 
     public String getFrom() {
         return from;
